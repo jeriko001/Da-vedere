@@ -1,0 +1,16 @@
+COSA GUARDO STASERA - app installabile (PWA)
+
+Contenuto: index.html, manifest.webmanifest, sw.js, cartella icons.
+Tieni tutti i file insieme, nella stessa cartella.
+
+L'installazione funziona solo se l'app e' online su HTTPS (aprire index.html
+dal disco NON basta). Il modo piu' semplice e' GitHub Pages:
+
+1. Crea un repository su GitHub (es. "cosa-guardo").
+2. Carica TUTTO il contenuto dello zip (non la cartella zip) nella radice del repo.
+3. Settings > Pages > Source: "Deploy from a branch", branch main, cartella /(root).
+4. Apri l'indirizzo https://TUONOME.github.io/cosa-guardo/ dal telefono.
+5. Android/Chrome: menu > "Installa app". iPhone/Safari: Condividi > "Aggiungi a Home".
+
+Alla prima apertura: chiave TMDB e caricamento di Film.md, Serie.md, Anime.md
+(liste e titoli visti restano salvati nel browser di quel dispositivo).

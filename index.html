@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14110d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cosa guardo">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Cosa guardo stasera</title>
+<style>
+:root{
+  --bg:#14110d; --bg2:#1f1a12; --ink:#fff7e0; --muted:#a89c80;
+  --yellow:#ffd60a; --yellow-d:#e6b800; --green:#2ecc71; --red:#ff4757;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(120% 90% at 50% 0%,var(--bg2),var(--bg) 70%);
+  color:var(--ink);
+  font-family:"Avenir Next","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  overflow:hidden;user-select:none;-webkit-user-select:none;
+}
+.view{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom)}
+.view.on{display:flex;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+
+/* START */
+#btnStart{
+  width:min(72vw,320px);height:min(72vw,320px);border-radius:50%;border:0;cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,#ffe65c,var(--yellow) 55%,var(--yellow-d));
+  color:#1a1400;font:900 clamp(34px,10vw,56px)/1 "Arial Black","Avenir Next",sans-serif;letter-spacing:.04em;
+  box-shadow:0 0 0 0 rgba(255,214,10,.5),0 20px 60px rgba(255,214,10,.25),inset 0 -10px 24px rgba(0,0,0,.18);
+  animation:pulse 2.4s ease-out infinite;transition:transform .15s;
+}
+#btnStart:active{transform:scale(.94)}
+@keyframes pulse{70%{box-shadow:0 0 0 38px rgba(255,214,10,0),0 20px 60px rgba(255,214,10,.25),inset 0 -10px 24px rgba(0,0,0,.18)}
+ 100%{box-shadow:0 0 0 0 rgba(255,214,10,0),0 20px 60px rgba(255,214,10,.25),inset 0 -10px 24px rgba(0,0,0,.18)}}
+
+/* Sezioni */
+#view-sections{gap:16px}
+#view-sections h2{margin:0 0 8px;font-size:22px;font-weight:700;color:var(--muted)}
+.sec{
+  width:min(86vw,360px);padding:20px 24px;border:0;border-radius:22px;cursor:pointer;
+  background:var(--yellow);color:#1a1400;text-align:left;
+  display:flex;flex-direction:column;gap:4px;transition:transform .15s,background .15s;
+}
+.sec:hover{background:#ffe033}.sec:active{transform:scale(.97)}
+.sec b{font:900 30px/1 "Arial Black","Avenir Next",sans-serif}
+.sec small{font-size:14px;opacity:.75}
+.gear{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:14px;width:44px;height:44px;border-radius:50%;
+  border:1px solid #ffffff22;background:#ffffff0d;color:var(--ink);font-size:20px;cursor:pointer;z-index:5}
+
+/* Gioco */
+#view-play{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top) + 12px)}
+.top{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;height:48px}
+.top button{width:44px;height:44px;border-radius:50%;border:1px solid #ffffff22;background:#ffffff0d;color:var(--ink);font-size:20px;cursor:pointer}
+.top .mid{text-align:center;line-height:1.2}
+.top .mid b{font-size:18px}.top .mid small{display:block;color:var(--muted);font-size:13px}
+#stage{position:relative;flex:1;width:100%;max-width:420px;display:flex;align-items:center;justify-content:center;min-height:0;padding:8px 0}
+.card{
+  position:absolute;width:min(100%,340px);max-height:100%;border-radius:26px;overflow:hidden;
+  background:#241e14;box-shadow:0 24px 60px rgba(0,0,0,.55);
+  touch-action:none;cursor:grab;will-change:transform;display:flex;flex-direction:column;
+}
+.card:active{cursor:grabbing}
+.poster{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#2e261a;pointer-events:none;max-height:58vh}
+.noposter{width:100%;aspect-ratio:2/3;max-height:58vh;display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:24px;color:var(--muted);background:repeating-linear-gradient(135deg,#2e261a 0 14px,#2a2317 14px 28px);font-size:15px}
+.info{padding:14px 18px 16px}
+.info h3{margin:0;font-size:21px;line-height:1.2;font-weight:800}
+.info p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.stamp{position:absolute;top:26px;padding:4px 16px;border:5px solid;border-radius:14px;font:900 44px/1.1 "Arial Black",sans-serif;opacity:0;pointer-events:none}
+.stamp.v{left:20px;color:var(--green);transform:rotate(-14deg)}
+.stamp.x{right:20px;color:var(--red);transform:rotate(14deg)}
+.ghost{position:absolute;width:min(92%,310px);height:60%;border-radius:26px;background:#1d1810;transform:translateY(14px) scale(.95);z-index:0}
+.actions{display:flex;gap:44px;padding:14px 0 calc(env(safe-area-inset-bottom) + 18px)}
+.round{width:76px;height:76px;border-radius:50%;border:0;cursor:pointer;font:900 36px/1 "Arial Black",sans-serif;color:#fff;
+  box-shadow:0 10px 26px rgba(0,0,0,.45);transition:transform .12s}
+.round:active{transform:scale(.9)}
+.round.ok{background:var(--green)}.round.no{background:var(--red)}
+.msg{text-align:center;color:var(--muted);line-height:1.5;max-width:300px}
+.msg b{display:block;color:var(--ink);font-size:22px;margin-bottom:6px}
+.spin{width:44px;height:44px;border:5px solid #ffffff22;border-top-color:var(--yellow);border-radius:50%;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* Modali */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;z-index:20;
+  background:rgba(10,8,5,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.modal.on{display:flex}
+.box{width:min(100%,380px);padding:26px 22px;border-radius:24px;background:#ffffff14;border:1px solid #ffffff26;
+  box-shadow:0 30px 80px rgba(0,0,0,.5);animation:pop .45s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{opacity:0;transform:translateY(30px) scale(.9)}to{opacity:1;transform:none}}
+.box h3{margin:0 0 6px;font-size:22px}
+.box p{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.45}
+.box a{color:var(--yellow)}
+.box input{width:100%;padding:14px;border-radius:14px;border:1px solid #ffffff33;background:#00000055;color:var(--ink);font-size:16px;user-select:text;-webkit-user-select:text}
+.box input:focus{outline:2px solid var(--yellow);outline-offset:1px}
+.btn{width:100%;margin-top:12px;padding:14px;border:0;border-radius:14px;background:var(--yellow);color:#1a1400;font:800 16px/1 inherit;font-family:inherit;cursor:pointer}
+.btn.alt{background:#ffffff1a;color:var(--ink);font-weight:600}
+.btn.danger{background:#ff475733;color:#ff9aa4}
+.err{color:var(--red);font-size:13px;min-height:18px;margin-top:8px}
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 120px);left:50%;transform:translateX(-50%);background:#000c;color:#fff;
+  padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;display:none;max-width:90vw;text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="view on" id="view-start"><button id="btnStart">START</button></div>
+
+<div class="view" id="view-sections">
+  <button class="gear" id="gear1" aria-label="Impostazioni">⚙</button>
+  <h2>Cosa guardiamo?</h2>
+  <button class="sec" data-sec="Film"><b>Film</b><small></small></button>
+  <button class="sec" data-sec="Serie"><b>Serie</b><small></small></button>
+  <button class="sec" data-sec="Anime"><b>Anime</b><small></small></button>
+</div>
+
+<div class="view" id="view-play">
+  <div class="top">
+    <button id="btnBack" aria-label="Indietro">←</button>
+    <div class="mid"><b id="secName"></b><small id="secCount"></small></div>
+    <button id="gear2" aria-label="Impostazioni">⚙</button>
+  </div>
+  <div id="stage"></div>
+  <div class="actions">
+    <button class="round no" id="btnNo" aria-label="Non ora">✕</button>
+    <button class="round ok" id="btnOk" aria-label="Visto">✓</button>
+  </div>
+</div>
+
+<div class="modal" id="modalKey">
+  <div class="box">
+    <h3>Chiave API di TMDB</h3>
+    <p>Serve per scaricare le locandine. Si inserisce una volta sola e resta salvata su questo dispositivo. La trovi su <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org/settings/api</a>.</p>
+    <input id="keyInput" type="text" placeholder="Incolla qui la chiave" autocomplete="off" spellcheck="false">
+    <div class="err" id="keyErr"></div>
+    <button class="btn" id="keySave">Salva chiave</button>
+  </div>
+</div>
+
+<div class="modal" id="modalSet">
+  <div class="box">
+    <h3>Impostazioni</h3>
+    <p>Gli elenchi caricati e i titoli già visti sono salvati in questo browser.</p>
+    <button class="btn alt" id="setKey">Cambia chiave API</button>
+    <button class="btn alt" data-load="Film">Ricarica Film.md</button>
+    <button class="btn alt" data-load="Serie">Ricarica Serie.md</button>
+    <button class="btn alt" data-load="Anime">Ricarica Anime.md</button>
+    <button class="btn danger" id="setReset">Azzera i titoli visti…</button>
+    <button class="btn" id="setClose">Chiudi</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="filePick" accept=".md,.txt,text/markdown,text/plain" hidden>
+
+<script>
+const SECTIONS=['Film','Serie','Anime'];
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast('Impossibile salvare nel browser')}}
+};
+let apiKey=store.get('tmdbKey','');
+let sec=null, list=[], seen=new Set(), skipped=new Set();
+let cur=null, nextP=null, cardEl=null, busy=false, pendingSec=null, session=0;
+
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2800)}
+function show(id){$$('.view').forEach(v=>v.classList.remove('on'));$('#view-'+id).classList.add('on')}
+
+/* ---------- Parsing del file .md ---------- */
+function parseMd(text){
+  const out=[], keys=new Set();
+  for(let line of text.split(/\r?\n/)){
+    let l=line.trim();
+    if(!l||l.startsWith('#')||/^-{3,}$/.test(l)) continue;
+    let checked=false;
+    const m=l.match(/^(?:[-*+]|\d+[.)])\s*(?:\[( |x|X)\]\s*)?(.*)$/);
+    if(m){ if(m[1]&&m[1].toLowerCase()==='x') checked=true; l=m[2]; }
+    else { const c=l.match(/^\[( |x|X)\]\s*(.*)$/); if(c){ if(c[1].toLowerCase()==='x') checked=true; l=c[2]; } }
+    if(checked) continue;
+    l=l.replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g,(a,b,c)=>c||b)
+       .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1')
+       .replace(/[*_`~]/g,'').trim();
+    let year='';
+    const y=l.match(/[\(\[]?\b((?:19|20)\d{2})\b[\)\]]?\s*$/);
+    if(y && l.length>y[0].length+1){ year=y[1]; l=l.slice(0,y.index).replace(/[\s(\[-]+$/,'').trim(); }
+    if(!l) continue;
+    const k=(l.toLowerCase()+'|'+year);
+    if(keys.has(k)) continue;
+    keys.add(k); out.push({t:l,y:year,k});
+  }
+  return out;
+}
+const loadList=s=>store.get('list_'+s,[]);
+const loadSeen=s=>new Set(store.get('seen_'+s,[]));
+const saveSeen=()=>store.set('seen_'+sec,[...seen]);
+
+/* ---------- TMDB ---------- */
+async function tmdb(path,params){
+  const url=new URL('https://api.themoviedb.org/3'+path);
+  const headers={};
+  if(apiKey.length>40) headers.Authorization='Bearer '+apiKey; else url.searchParams.set('api_key',apiKey);
+  Object.entries(params).forEach(([k,v])=>v&&url.searchParams.set(k,v));
+  const r=await fetch(url,{headers});
+  if(r.status===401) throw new Error('KEY');
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function lookup(item){
+  const order=sec==='Film'?['movie','tv']:['tv','movie'];
+  for(const type of order){
+    const base={query:item.t,language:'it-IT',include_adult:'false'};
+    const yp=type==='movie'?'year':'first_air_date_year';
+    let res=[];
+    if(item.y) res=(await tmdb('/search/'+type,{...base,[yp]:item.y})).results||[];
+    if(!res.length) res=(await tmdb('/search/'+type,base)).results||[];
+    if(res.length){
+      const r=res[0];
+      const date=r.release_date||r.first_air_date||'';
+      return {title:r.title||r.name||item.t,year:date.slice(0,4)||item.y,
+              poster:r.poster_path?'https://image.tmdb.org/t/p/w500'+r.poster_path:null};
+    }
+  }
+  return {title:item.t,year:item.y,poster:null,missing:true};
+}
+
+/* ---------- Pesca random ---------- */
+function pick(excl){
+  const pool=()=>list.filter(i=>!seen.has(i.k)&&!skipped.has(i.k)&&i.k!==excl);
+  let p=pool();
+  if(!p.length&&skipped.size){skipped.clear();p=pool()}
+  return p.length?p[Math.floor(Math.random()*p.length)]:null;
+}
+async function draw(excl){
+  const my=session;
+  const item=pick(excl);
+  if(!item) return null;
+  let data;
+  try{ data=await lookup(item) }
+  catch(e){ if(e.message==='KEY') throw e; data={title:item.t,year:item.y,poster:null,offline:true} }
+  if(my!==session) return null;
+  if(data.poster){ const im=new Image(); im.src=data.poster; }
+  return {item,data};
+}
+const remaining=()=>list.filter(i=>!seen.has(i.k)).length;
+
+/* ---------- Gioco ---------- */
+function setMsg(html){ $('#stage').innerHTML='<div class="msg">'+html+'</div>'; cardEl=null; }
+async function enter(s){
+  sec=s; list=loadList(s);
+  if(!list.length){ pendingSec=s; askFile(s); return; }
+  seen=loadSeen(s); skipped=new Set(); session++; busy=false; cur=null; nextP=null;
+  $('#secName').textContent=s; updateCount();
+  show('play');
+  setMsg('<div class="spin" style="margin:auto"></div>');
+  try{
+    cur=await draw(null);
+    if(!cur){ return finished() }
+    renderCard(); prefetch();
+  }catch(e){ handleErr(e) }
+}
+function updateCount(){ $('#secCount').textContent=remaining()+' da scoprire' }
+function prefetch(){ nextP=draw(cur.item.k).catch(e=>{nextP=null;return null}) }
+function finished(){
+  setMsg('<b>Hai finito!</b>Hai già visto tutti i titoli di '+sec+'. Per ricominciare azzera i titoli visti dalle impostazioni.');
+  updateCount();
+}
+function handleErr(e){
+  if(e.message==='KEY'){ setMsg('<b>Chiave non valida</b>TMDB ha rifiutato la chiave. Inseriscine una nuova.'); openKey('Chiave rifiutata da TMDB: controlla di averla copiata tutta.'); }
+  else setMsg('<b>Connessione assente</b>Non riesco a raggiungere TMDB. Controlla internet e riprova.');
+}
+function renderCard(){
+  const d=cur.data;
+  const st=$('#stage'); st.innerHTML='<div class="ghost"></div>';
+  const c=document.createElement('div'); c.className='card';
+  c.innerHTML=(d.poster?`<img class="poster" src="${d.poster}" alt="" draggable="false">`
+    :`<div class="noposter">${d.offline?'Locandina non scaricata (sei offline?)':'Locandina non trovata su TMDB'}</div>`)
+    +`<div class="info"><h3></h3><p></p></div><div class="stamp v">✓</div><div class="stamp x">✕</div>`;
+  c.querySelector('h3').textContent=d.title;
+  c.querySelector('p').textContent=d.year||'';
+  st.appendChild(c); cardEl=c; busy=false;
+  c.animate([{transform:'scale(.9) translateY(20px)',opacity:0},{transform:'none',opacity:1}],{duration:280,easing:'ease-out'});
+  bindDrag(c);
+}
+function bindDrag(c){
+  let sx=0,sy=0,dx=0,drag=false;
+  const sv=c.querySelector('.stamp.v'), sxm=c.querySelector('.stamp.x');
+  c.addEventListener('pointerdown',e=>{ if(busy)return; drag=true;sx=e.clientX;sy=e.clientY;dx=0;c.style.transition='none';c.setPointerCapture(e.pointerId) });
+  c.addEventListener('pointermove',e=>{
+    if(!drag)return; dx=e.clientX-sx; const dy=(e.clientY-sy)*.4;
+    c.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/18}deg)`;
+    const p=Math.min(Math.abs(dx)/110,1);
+    sv.style.opacity=dx>0?p:0; sxm.style.opacity=dx<0?p:0;
+  });
+  const end=()=>{
+    if(!drag)return; drag=false;
+    if(Math.abs(dx)>110) fly(dx>0?1:-1);
+    else{ c.style.transition='transform .3s cubic-bezier(.2,1.4,.4,1)'; c.style.transform='none'; sv.style.opacity=0; sxm.style.opacity=0 }
+  };
+  c.addEventListener('pointerup',end); c.addEventListener('pointercancel',end);
+}
+function fly(dir){
+  if(busy||!cardEl||!cur) return; busy=true;
+  const c=cardEl;
+  c.querySelector(dir>0?'.stamp.v':'.stamp.x').style.opacity=1;
+  c.style.transition='transform .38s ease-in,opacity .38s ease-in';
+  c.style.transform=`translate(${dir*140}vw,-30px) rotate(${dir*28}deg)`;
+  c.style.opacity='0';
+  setTimeout(()=>decide(dir),330);
+}
+async function decide(dir){
+  if(dir>0){ seen.add(cur.item.k); saveSeen(); } else skipped.add(cur.item.k);
+  updateCount();
+  setMsg('<div class="spin" style="margin:auto"></div>');
+  try{
+    let n=nextP?await nextP:null;
+    if(!n || seen.has(n.item.k)) n=await draw(cur.item.k);
+    if(!n && dir<0){ skipped.clear(); n=await draw(null); }
+    if(!n) return finished();
+    cur=n; renderCard(); prefetch();
+  }catch(e){ handleErr(e) }
+}
+$('#btnOk').onclick=()=>fly(1);
+$('#btnNo').onclick=()=>fly(-1);
+document.addEventListener('keydown',e=>{
+  if(!$('#view-play').classList.contains('on'))return;
+  if(e.key==='ArrowRight')fly(1); if(e.key==='ArrowLeft')fly(-1);
+});
+
+/* ---------- File .md ---------- */
+function askFile(s){ pendingSec=s; $('#filePick').value=''; $('#filePick').click() }
+$('#filePick').addEventListener('change',async e=>{
+  const f=e.target.files[0]; const s=pendingSec; if(!f||!s) return;
+  const items=parseMd(await f.text());
+  if(!items.length){ toast('Nessun titolo trovato in '+f.name); return }
+  store.set('list_'+s,items);
+  toast(items.length+' titoli caricati in '+s);
+  renderSections();
+  if($('#modalSet').classList.contains('on')) return;
+  enter(s);
+});
+
+/* ---------- Home / sezioni ---------- */
+function renderSections(){
+  $$('.sec').forEach(b=>{
+    const s=b.dataset.sec, l=loadList(s), v=new Set(store.get('seen_'+s,[]));
+    b.querySelector('small').textContent=l.length?(l.filter(i=>!v.has(i.k)).length+' da scoprire su '+l.length):'Tocca per caricare '+s+'.md';
+  });
+}
+$$('.sec').forEach(b=>b.onclick=()=>enter(b.dataset.sec));
+$('#btnStart').onclick=()=>{ renderSections(); show('sections'); if(!apiKey) setTimeout(()=>openKey(),350); };
+$('#btnBack').onclick=()=>{ session++; renderSections(); show('sections') };
+
+/* ---------- Chiave API ---------- */
+function openKey(err){ $('#keyErr').textContent=err||''; $('#keyInput').value=''; $('#modalKey').classList.add('on'); setTimeout(()=>$('#keyInput').focus(),200) }
+$('#keySave').onclick=()=>{
+  const v=$('#keyInput').value.trim();
+  if(v.length<20){ $('#keyErr').textContent='La chiave sembra troppo corta.'; return }
+  apiKey=v; store.set('tmdbKey',v); $('#modalKey').classList.remove('on');
+  if($('#view-play').classList.contains('on')) enter(sec);
+};
+$('#keyInput').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#keySave').click() });
+
+/* ---------- Impostazioni ---------- */
+const openSet=()=>$('#modalSet').classList.add('on');
+$('#gear1').onclick=openSet; $('#gear2').onclick=openSet;
+$('#setClose').onclick=()=>$('#modalSet').classList.remove('on');
+$('#setKey').onclick=()=>{ $('#modalSet').classList.remove('on'); openKey() };
+$$('[data-load]').forEach(b=>b.onclick=()=>{ $('#modalSet').classList.remove('on'); askFile(b.dataset.load) });
+$('#setReset').onclick=()=>{
+  const which=prompt('Quale elenco azzerare? Scrivi Film, Serie, Anime oppure Tutti');
+  if(!which) return;
+  const w=which.trim().toLowerCase();
+  const targets=w==='tutti'?SECTIONS:SECTIONS.filter(s=>s.toLowerCase()===w);
+  if(!targets.length){ toast('Nome non riconosciuto'); return }
+  targets.forEach(s=>store.set('seen_'+s,[]));
+  renderSections(); $('#modalSet').classList.remove('on');
+  toast('Titoli visti azzerati: '+targets.join(', '));
+  if($('#view-play').classList.contains('on') && targets.includes(sec)) enter(sec);
+};
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
